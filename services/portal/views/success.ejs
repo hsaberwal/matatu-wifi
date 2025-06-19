@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connected - Matatu WiFi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 30px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: scaleIn 0.5s ease-out;
+        }
+        
+        @keyframes scaleIn {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .checkmark {
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        
+        .message {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        
+        .timer-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .timer-label {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .timer {
+            font-size: 36px;
+            font-weight: bold;
+            color: #667eea;
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .info-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .info-label {
+            color: #999;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            color: #333;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .btn-disconnect {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        
+        .btn-disconnect:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+        }
+        
+        .tips {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: left;
+            margin-top: 30px;
+        }
+        
+        .tips-title {
+            color: #1976D2;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .tips ul {
+            list-style: none;
+            color: #555;
+            font-size: 14px;
+        }
+        
+        .tips li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .tips li::before {
+            content: "•";
+            color: #2196F3;
+            position: absolute;
+            left: 0;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .timer {
+                font-size: 32px;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-icon">
+            <span class="checkmark">✓</span>
+        </div>
+        
+        <h1>You're Connected!</h1>
+        
+        <p class="message">
+            Enjoy your free WiFi access. Your session will expire in:
+        </p>
+        
+        <div class="timer-container">
+            <div class="timer-label">Time Remaining</div>
+            <div class="timer" id="countdown">15:00</div>
+        </div>
+        
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Connection Speed</div>
+                <div class="info-value">2 Mbps</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Data Used</div>
+                <div class="info-value" id="dataUsed">0 MB</div>
+            </div>
+        </div>
+        
+        <div class="tips">
+            <div class="tips-title">📱 Tips for Best Experience:</div>
+            <ul>
+                <li>Stay within range of the WiFi router</li>
+                <li>Close unused apps to save data</li>
+                <li>Your session will end after 15 minutes</li>
+                <li>Watch another ad to continue browsing</li>
+            </ul>
+        </div>
+        
+        <div class="warning">
+            ⚠️ Your session will expire automatically after 15 minutes or if you disconnect
+        </div>
+        
+        <button class="btn-disconnect" onclick="disconnect()">
+            Disconnect
+        </button>
+    </div>
+    
+    <script>
+        // Session data from server
+        const sessionData = <%= JSON.stringify(session || {}) %>;
+        const initialRemainingTime = <%= remainingTime || 900 %>; // 15 minutes default
+        
+        let remainingSeconds = initialRemainingTime;
+        let dataUsed = 0;
+        
+        // Update countdown timer
+        function updateTimer() {
+            if (remainingSeconds <= 0) {
+                window.location.href = '/?expired=true';
+                return;
+            }
+            
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = remainingSeconds % 60;
+            
+            document.getElementById('countdown').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            remainingSeconds--;
+            
+            // Warning at 1 minute
+            if (remainingSeconds === 60) {
+                showWarning('Your session will expire in 1 minute!');
+            }
+        }
+        
+        // Update data usage (simulated)
+        function updateDataUsage() {
+            // In real implementation, this would fetch from server
+            dataUsed += Math.random() * 0.1;
+            document.getElementById('dataUsed').textContent = 
+                `${dataUsed.toFixed(2)} MB`;
+        }
+        
+        // Show warning message
+        function showWarning(message) {
+            const warning = document.querySelector('.warning');
+            warning.textContent = '⚠️ ' + message;
+            warning.style.background = '#f8d7da';
+            warning.style.borderColor = '#f5c6cb';
+            warning.style.color = '#721c24';
+        }
+        
+        // Disconnect function
+        async function disconnect() {
+            if (confirm('Are you sure you want to disconnect?')) {
+                try {
+                    const response = await fetch('/api/auth/disconnect', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            sessionId: sessionData.id
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        window.location.href = '/?disconnected=true';
+                    }
+                } catch (error) {
+                    console.error('Disconnect error:', error);
+                    alert('Failed to disconnect. Please try again.');
+                }
+            }
+        }
+        
+        // Check session status periodically
+        async function checkSessionStatus() {
+            if (!sessionData.id) return;
+            
+            try {
+                const response = await fetch(`/api/auth/status/${sessionData.id}`);
+                const data = await response.json();
+                
+                if (data.status === 'expired' || data.status === 'terminated') {
+                    window.location.href = '/?expired=true';
+                } else if (data.remainingTime) {
+                    remainingSeconds = data.remainingTime;
+                }
+            } catch (error) {
+                console.error('Status check error:', error);
+            }
+        }
+        
+        // Start timers
+        setInterval(updateTimer, 1000);
+        setInterval(updateDataUsage, 5000);
+        setInterval(checkSessionStatus, 30000); // Check every 30 seconds
+        
+        // Initial updates
+        updateTimer();
+        updateDataUsage();
+        
+        // Prevent accidental navigation
+        window.addEventListener('beforeunload', (e) => {
+            if (remainingSeconds > 0) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    </script>
+</body>
+</html>

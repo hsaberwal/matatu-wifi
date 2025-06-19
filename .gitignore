@@ -1,0 +1,92 @@
+# Environment variables
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Data directories
+data/mysql/*
+data/ads/videos/*
+data/ads/images/*
+data/ads/temp/*
+data/logs/*
+data/backups/*
+
+# Keep directory structure
+!data/mysql/.gitkeep
+!data/ads/videos/.gitkeep
+!data/ads/images/.gitkeep
+!data/ads/temp/.gitkeep
+!data/logs/.gitkeep
+!data/backups/.gitkeep
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+*.csr
+config/nginx/ssl/*
+!config/nginx/ssl/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Docker
+.dockerignore
+
+# Kubernetes secrets
+secrets.yaml
+*-secrets.yaml

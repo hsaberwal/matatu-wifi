@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matatu WiFi - Free Internet Access</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: white;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .features {
+            text-align: left;
+            margin: 30px 0;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .feature {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            color: #555;
+        }
+        
+        .feature:last-child {
+            margin-bottom: 0;
+        }
+        
+        .feature-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 15px;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .btn-connect {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 20px;
+            width: 100%;
+            font-weight: 600;
+        }
+        
+        .btn-connect:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-connect:active {
+            transform: translateY(0);
+        }
+        
+        .terms {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .terms a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .loading {
+            display: none;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 20px auto;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .subtitle {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">📶</div>
+        
+        <h1>Welcome to Matatu WiFi</h1>
+        <p class="subtitle">Get free internet access by watching a short ad</p>
+        
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">✓</div>
+                <span>Watch a 30-second ad</span>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">✓</div>
+                <span>Get 15 minutes of free WiFi</span>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">✓</div>
+                <span>2 Mbps connection speed</span>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">✓</div>
+                <span>Safe and secure browsing</span>
+            </div>
+        </div>
+        
+        <button class="btn-connect" onclick="startConnection()">
+            Connect to WiFi
+        </button>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Preparing your connection...</p>
+        </div>
+        
+        <div class="error-message" id="error"></div>
+        
+        <p class="terms">
+            By connecting, you agree to our 
+            <a href="/terms" target="_blank">Terms of Service</a> and 
+            <a href="/privacy" target="_blank">Privacy Policy</a>
+        </p>
+    </div>
+    
+    <script>
+        // Get device info
+        const deviceInfo = {
+            mac: '<%= macAddress %>',
+            ip: '<%= ipAddress %>',
+            userAgent: '<%= userAgent %>',
+            timestamp: new Date().toISOString()
+        };
+        
+        async function startConnection() {
+            const button = document.querySelector('.btn-connect');
+            const loading = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            
+            // Reset error
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+            
+            // Show loading
+            button.style.display = 'none';
+            loading.classList.add('active');
+            
+            try {
+                // Request authentication
+                const response = await fetch('/api/auth/request', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(deviceInfo)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Redirect to ad page
+                    window.location.href = `/ad?session=${data.sessionId}`;
+                } else {
+                    throw new Error(data.message || 'Connection failed');
+                }
+            } catch (error) {
+                console.error('Connection error:', error);
+                errorDiv.textContent = error.message || 'Failed to connect. Please try again.';
+                errorDiv.style.display = 'block';
+                button.style.display = 'block';
+                loading.classList.remove('active');
+            }
+        }
+        
+        // Auto-detect captive portal
+        window.addEventListener('load', () => {
+            // Check if we're in a captive portal environment
+            if (window.location.search.includes('redirect') || 
+                window.location.search.includes('uamip')) {
+                console.log('Captive portal detected');
+            }
+        });
+        
+        // Handle back button
+        window.addEventListener('popstate', (event) => {
+            if (event.state && event.state.connected) {
+                window.location.href = '/success';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watch Ad - Matatu WiFi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .ad-container {
+            width: 100%;
+            max-width: 800px;
+            position: relative;
+        }
+        
+        #adVideo {
+            width: 100%;
+            height: auto;
+            max-height: 80vh;
+            background: #000;
+        }
+        
+        .controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .countdown {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .skip-info {
+            font-size: 14px;
+            color: #ccc;
+            margin-top: 5px;
+        }
+        
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .btn-skip {
+            display: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-skip:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-skip.enabled {
+            display: block;
+        }
+        
+        .message {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 30px;
+            border-radius: 10px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .error-container {
+            text-align: center;
+            padding: 40px;
+            max-width: 500px;
+        }
+        
+        .error-container h2 {
+            margin-bottom: 20px;
+            color: #ff6b6b;
+        }
+        
+        .error-container p {
+            margin-bottom: 30px;
+            color: #ccc;
+        }
+        
+        .btn-retry {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 50px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 600px) {
+            .controls {
+                top: 10px;
+                right: 10px;
+                padding: 10px 15px;
+            }
+            
+            .countdown {
+                font-size: 20px;
+            }
+            
+            .skip-info {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="ad-container" id="adContainer">
+        <video id="adVideo" playsinline>
+            <source src="" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        
+        <div class="controls">
+            <div class="countdown" id="countdown">30</div>
+            <div class="skip-info">Watch to continue</div>
+            <button class="btn-skip" id="skipBtn" onclick="completeAd()">
+                Continue to WiFi
+            </button>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar"></div>
+        </div>
+        
+        <div class="message" id="message" style="display: none;">
+            <p>Thank you for watching! Connecting to WiFi...</p>
+        </div>
+    </div>
+    
+    <div class="error-container" id="errorContainer" style="display: none;">
+        <h2>Oops! Something went wrong</h2>
+        <p id="errorMessage">We couldn't load the ad. Please try again.</p>
+        <a href="/" class="btn-retry">Try Again</a>
+    </div>
+    
+    <script>
+        let adData = null;
+        let sessionId = null;
+        let startTime = null;
+        let adDuration = 30;
+        let watchedDuration = 0;
+        let minWatchPercentage = 80;
+        let isCompleted = false;
+        
+        // Get session ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        sessionId = urlParams.get('session');
+        
+        if (!sessionId) {
+            showError('Invalid session. Please start again.');
+        } else {
+            loadAd();
+        }
+        
+        async function loadAd() {
+            try {
+                // Show loading
+                document.getElementById('adContainer').innerHTML += 
+                    '<div class="loading-spinner"></div>';
+                
+                // Fetch ad from service
+                const response = await fetch(`/api/ads/next?session=${sessionId}`);
+                const data = await response.json();
+                
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Failed to load ad');
+                }
+                
+                adData = data.ad;
+                adDuration = adData.duration || 30;
+                minWatchPercentage = data.minWatchPercentage || 80;
+                
+                // Remove loading spinner
+                const spinner = document.querySelector('.loading-spinner');
+                if (spinner) spinner.remove();
+                
+                // Setup video
+                setupVideo(adData.videoUrl);
+                
+            } catch (error) {
+                console.error('Error loading ad:', error);
+                showError(error.message);
+            }
+        }
+        
+        function setupVideo(videoUrl) {
+            const video = document.getElementById('adVideo');
+            const source = video.querySelector('source');
+            
+            source.src = videoUrl;
+            video.load();
+            
+            // Video event handlers
+            video.addEventListener('loadeddata', () => {
+                console.log('Video loaded successfully');
+            });
+            
+            video.addEventListener('play', () => {
+                if (!startTime) {
+                    startTime = Date.now();
+                    trackAdImpression();
+                }
+            });
+            
+            video.addEventListener('timeupdate', updateProgress);
+            
+            video.addEventListener('ended', () => {
+                if (!isCompleted) {
+                    completeAd();
+                }
+            });
+            
+            video.addEventListener('error', (e) => {
+                console.error('Video error:', e);
+                showError('Failed to load video. Please try again.');
+            });
+            
+            // Auto-play video
+            video.play().catch(err => {
+                console.error('Autoplay failed:', err);
+                // Show play button if autoplay fails
+                video.controls = true;
+            });
+        }
+        
+        function updateProgress() {
+            const video = document.getElementById('adVideo');
+            const progressBar = document.getElementById('progressBar');
+            const countdown = document.getElementById('countdown');
+            const skipBtn = document.getElementById('skipBtn');
+            
+            if (video.duration) {
+                const progress = (video.currentTime / video.duration) * 100;
+                progressBar.style.width = progress + '%';
+                
+                const remaining = Math.ceil(video.duration - video.currentTime);
+                countdown.textContent = remaining;
+                
+                watchedDuration = video.currentTime;
+                
+                // Enable skip button if watched enough
+                const watchedPercentage = (video.currentTime / video.duration) * 100;
+                if (watchedPercentage >= minWatchPercentage && !skipBtn.classList.contains('enabled')) {
+                    skipBtn.classList.add('enabled');
+                    document.querySelector('.skip-info').textContent = 'Ad complete!';
+                }
+            }
+        }
+        
+        async function trackAdImpression() {
+            try {
+                await fetch('/api/ads/impression', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sessionId: sessionId,
+                        adId: adData.id,
+                        startTime: startTime
+                    })
+                });
+            } catch (error) {
+                console.error('Error tracking impression:', error);
+            }
+        }
+        
+        async function completeAd() {
+            if (isCompleted) return;
+            
+            const video = document.getElementById('adVideo');
+            const watchedPercentage = (watchedDuration / video.duration) * 100;
+            
+            if (watchedPercentage < minWatchPercentage) {
+                alert(`Please watch at least ${minWatchPercentage}% of the ad to continue.`);
+                return;
+            }
+            
+            isCompleted = true;
+            video.pause();
+            
+            // Show success message
+            document.getElementById('message').style.display = 'block';
+            
+            try {
+                // Complete ad and authenticate
+                const response = await fetch('/api/auth/complete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sessionId: sessionId,
+                        adId: adData.id,
+                        watchedDuration: watchedDuration,
+                        completed: true
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Redirect to success page
+                    setTimeout(() => {
+                        window.location.href = '/success';
+                    }, 2000);
+                } else {
+                    throw new Error(data.message || 'Authentication failed');
+                }
+            } catch (error) {
+                console.error('Error completing ad:', error);
+                showError(error.message);
+            }
+        }
+        
+        function showError(message) {
+            document.getElementById('adContainer').style.display = 'none';
+            document.getElementById('errorContainer').style.display = 'block';
+            document.getElementById('errorMessage').textContent = message;
+        }
+        
+        // Prevent navigation during ad
+        window.addEventListener('beforeunload', (e) => {
+            if (!isCompleted && watchedDuration > 0) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    </script>
+</body>
+</html>
