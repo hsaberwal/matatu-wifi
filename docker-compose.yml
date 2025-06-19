@@ -1,0 +1,119 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: matatu-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: matatu_wifi
+      MYSQL_USER: matatu_user
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-matupassword}
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      - ./services/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3306:3306"
+    networks:
+      - matatu-network
+    restart: unless-stopped
+
+  # FreeRADIUS Server
+  freeradius:
+    build: ./services/radius
+    container_name: matatu-radius
+    depends_on:
+      - mysql
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: matatu_user
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-matupassword}
+      MYSQL_DATABASE: matatu_wifi
+    ports:
+      - "1812:1812/udp"
+      - "1813:1813/udp"
+    volumes:
+      - ./services/radius/clients.conf:/etc/freeradius/3.0/clients.conf
+      - ./services/radius/sql.conf:/etc/freeradius/3.0/mods-available/sql
+    networks:
+      - matatu-network
+    restart: unless-stopped
+
+  # Web Portal (Node.js/Express)
+  portal:
+    build: ./services/portal
+    container_name: matatu-portal
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      NODE_ENV: production
+      MYSQL_HOST: mysql
+      MYSQL_USER: matatu_user
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-matupassword}
+      MYSQL_DATABASE: matatu_wifi
+      REDIS_HOST: redis
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./services/portal:/app
+      - /app/node_modules
+    networks:
+      - matatu-network
+    restart: unless-stopped
+
+  # Ad Service (Python/Flask)
+  ad-service:
+    build: ./services/ad-service
+    container_name: matatu-ads
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: matatu_user
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-matupassword}
+      MYSQL_DATABASE: matatu_wifi
+      REDIS_HOST: redis
+      FLASK_ENV: production
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./services/ad-service:/app
+      - ./data/ads:/app/static/ads
+    networks:
+      - matatu-network
+    restart: unless-stopped
+
+  # Redis for session management
+  redis:
+    image: redis:7-alpine
+    container_name: matatu-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - matatu-network
+    restart: unless-stopped
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: matatu-nginx
+    depends_on:
+      - portal
+      - ad-service
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./config/nginx/ssl:/etc/nginx/ssl
+    networks:
+      - matatu-network
+    restart: unless-stopped
+
+networks:
+  matatu-network:
+    driver: bridge
